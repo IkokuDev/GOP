@@ -47,7 +47,7 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
       id: String(Date.now()), // temp id
       text: "",
       type: type,
-      correctAnswer: "",
+      correctAnswer: type === 'short-answer' ? [""] : "",
     };
 
     if (type === 'multiple-choice') {
@@ -83,6 +83,43 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     );
   };
 
+  const handleShortAnswerChange = (qLocalId: number, saIndex: number, value: string) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.localId === qLocalId && Array.isArray(q.correctAnswer)) {
+          const newAnswers = [...q.correctAnswer];
+          newAnswers[saIndex] = value;
+          return { ...q, correctAnswer: newAnswers };
+        }
+        return q;
+      })
+    );
+  };
+
+  const addShortAnswer = (qLocalId: number) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.localId === qLocalId && Array.isArray(q.correctAnswer)) {
+          return { ...q, correctAnswer: [...q.correctAnswer, ""] };
+        }
+        return q;
+      })
+    );
+  };
+
+  const removeShortAnswer = (qLocalId: number, saIndex: number) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.localId === qLocalId && Array.isArray(q.correctAnswer) && q.correctAnswer.length > 1) {
+          const newAnswers = q.correctAnswer.filter((_, i) => i !== saIndex);
+          return { ...q, correctAnswer: newAnswers };
+        }
+        return q;
+      })
+    );
+  };
+
+
   const handleSaveQuiz = async () => {
     if (!quizTitle || !quizDescription || questions.length === 0) {
         toast({ variant: "destructive", title: "Please fill all quiz fields." });
@@ -90,7 +127,7 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     }
     if (questions.some(q => 
         !q.text || 
-        !q.correctAnswer ||
+        !q.correctAnswer || (Array.isArray(q.correctAnswer) && q.correctAnswer.some(a => !a)) ||
         (q.type === 'multiple-choice' && q.options!.some(o => !o))
     )) {
         toast({ variant: "destructive", title: "Please complete all fields for each question." });
@@ -136,11 +173,11 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     switch (q.type) {
       case 'multiple-choice':
         return (
-          <RadioGroup onValueChange={(value) => handleQuestionChange(q.localId, 'correctAnswer', value)} value={q.correctAnswer}>
+          <RadioGroup onValueChange={(value) => handleQuestionChange(q.localId, 'correctAnswer', value)} value={q.correctAnswer as string}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {q.options!.map((opt, oIndex) => (
+                  {(q.options || []).map((opt, oIndex) => (
                       <div key={oIndex} className="flex items-center space-x-2">
-                          <RadioGroupItem value={q.options![oIndex]} id={`q${q.localId}-o${oIndex}`} />
+                          <RadioGroupItem value={(q.options || [])[oIndex]} id={`q${q.localId}-o${oIndex}`} />
                           <Input
                               placeholder={`Option ${oIndex + 1}`}
                               value={opt}
@@ -154,7 +191,7 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
         );
       case 'true-false':
         return (
-          <RadioGroup onValueChange={(value) => handleQuestionChange(q.localId, 'correctAnswer', value)} value={q.correctAnswer} className="flex space-x-4">
+          <RadioGroup onValueChange={(value) => handleQuestionChange(q.localId, 'correctAnswer', value)} value={q.correctAnswer as string} className="flex space-x-4">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="True" id={`q${q.localId}-true`} />
               <Label htmlFor={`q${q.localId}-true`}>True</Label>
@@ -167,12 +204,24 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
         );
       case 'short-answer':
         return (
-          <div>
-            <Label>Correct Answer</Label>
-            <Input 
-              placeholder="Enter the correct answer" 
-              value={q.correctAnswer} 
-              onChange={(e) => handleQuestionChange(q.localId, 'correctAnswer', e.target.value)} />
+          <div className="space-y-2">
+            <Label>Correct Answers</Label>
+            {Array.isArray(q.correctAnswer) && q.correctAnswer.map((ans, saIndex) => (
+              <div key={saIndex} className="flex items-center gap-2">
+                <Input
+                  placeholder="Enter a correct answer"
+                  value={ans}
+                  onChange={(e) => handleShortAnswerChange(q.localId, saIndex, e.target.value)}
+                />
+                <Button variant="ghost" size="icon" onClick={() => removeShortAnswer(q.localId, saIndex)} disabled={q.correctAnswer.length <= 1}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => addShortAnswer(q.localId)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Answer
+            </Button>
           </div>
         );
       default:
@@ -233,4 +282,3 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     </Card>
   );
 }
-

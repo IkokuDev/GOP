@@ -8,7 +8,7 @@ export type Article = {
   imageUrl: string;
   imageHint: string;
   quizId?: string;
-  createdAt: Date; // Changed to string for serializability
+  createdAt: Date;
   userId: string;
 };
 
@@ -27,7 +27,7 @@ export type Question = {
   id: string;
   text: string;
   options?: string[]; // Optional for short-answer
-  correctAnswer: string;
+  correctAnswer: string | string[]; // Can be a single string or an array for short-answer
   type: 'multiple-choice' | 'true-false' | 'short-answer';
 };
 
@@ -37,7 +37,7 @@ export type Quiz = {
   description: string;
   articleId?: string;
   questions: Question[];
-  createdAt: Date; // Changed to string for serializability
+  createdAt: Date;
 };
 
 export type LeaderboardEntry = {
@@ -59,5 +59,5 @@ export type QuizHistory = {
   quizId: string;
   score: number;
   totalQuestions: number;
-  date: string; // Changed to string for serializability
+  date: string;
 }

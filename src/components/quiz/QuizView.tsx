@@ -80,7 +80,8 @@ export function QuizView({ quiz }: QuizViewProps) {
 
     let isCorrect = false;
     if (currentQuestion.type === 'short-answer') {
-        isCorrect = answer.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+        const correctAnswers = Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer : [currentQuestion.correctAnswer];
+        isCorrect = correctAnswers.some(correct => answer.trim().toLowerCase() === correct.trim().toLowerCase());
     } else {
         isCorrect = answer === currentQuestion.correctAnswer;
     }
@@ -220,6 +221,8 @@ export function QuizView({ quiz }: QuizViewProps) {
         );
 
       case 'short-answer':
+        const correctAnswers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
+        const isCorrect = selectedAnswer && correctAnswers.some(correct => selectedAnswer.trim().toLowerCase() === correct.trim().toLowerCase());
         return (
           <div className="space-y-4">
              <Input 
@@ -228,10 +231,10 @@ export function QuizView({ quiz }: QuizViewProps) {
                 disabled={isAnswered}
                 className="text-lg"
              />
-             <Button onClick={() => handleAnswer(selectedAnswer || "")} disabled={isAnswered}>Submit Answer</Button>
+             <Button onClick={() => handleAnswer(selectedAnswer || "")} disabled={isAnswered || !selectedAnswer}>Submit Answer</Button>
              {isAnswered && (
-                <div className={cn("p-4 rounded-md", selectedAnswer?.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase() ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>
-                    <p>Correct Answer: <strong>{question.correctAnswer}</strong></p>
+                <div className={cn("p-4 rounded-md", isCorrect ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>
+                    <p>Correct Answer{correctAnswers.length > 1 ? 's' : ''}: <strong>{correctAnswers.join(' / ')}</strong></p>
                 </div>
              )}
           </div>

@@ -5,20 +5,21 @@ import { collection, getDocs, getDoc, doc, addDoc, updateDoc, arrayUnion, Timest
 import { type Quiz, type Question } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
-function docToQuiz(doc: any): Quiz {
-  const data = doc.data();
-  // Firestore Timestamps need to be converted to a serializable format (ISO string).
-  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
-  
+// Helper to convert Firestore doc to a serializable Quiz object
+function docToQuiz(docSnap: any): Quiz {
+  const data = docSnap.data();
   return {
-    id: doc.id,
+    id: docSnap.id,
     title: data.title,
     description: data.description,
     articleId: data.articleId,
     questions: data.questions,
-    createdAt: createdAt,
+    createdAt: (data.createdAt as Timestamp).toDate(),
   };
 }
+
+// Helper to ensure question data is a plain JavaScript object
+const toPlainObject = (obj: any) => JSON.parse(JSON.stringify(obj));
 
 export async function getQuizzes(): Promise<Quiz[]> {
   const quizzesCollection = collection(db, "quizzes");
@@ -40,7 +41,7 @@ export async function getQuiz(id: string): Promise<Quiz | null> {
 export async function createQuiz(quiz: Omit<Quiz, 'id' | 'createdAt'>): Promise<string> {
     const quizData = {
         ...quiz,
-        questions: quiz.questions.map(q => ({...q})), // Ensure questions are plain objects
+        questions: quiz.questions.map(toPlainObject), // Ensure questions are plain objects
         createdAt: Timestamp.now(),
     }
     const docRef = await addDoc(collection(db, "quizzes"), quizData);
@@ -53,7 +54,7 @@ export async function updateQuiz(id: string, quiz: Omit<Quiz, 'id' | 'createdAt'
     const docRef = doc(db, "quizzes", id);
     const quizData = {
         ...quiz,
-        questions: quiz.questions.map(q => ({...q})),
+        questions: quiz.questions.map(toPlainObject),
     }
     await updateDoc(docRef, quizData);
     revalidatePath('/admin/quizzes');

@@ -47,7 +47,7 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
       id: String(Date.now()), // temp id
       text: "",
       type: type,
-      correctAnswer: type === 'short-answer' ? [""] : "",
+      correctAnswer: "",
     };
 
     if (type === 'multiple-choice') {
@@ -55,6 +55,8 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     } else if (type === 'true-false') {
       newQuestion.options = ["True", "False"];
       newQuestion.correctAnswer = "True";
+    } else if (type === 'short-answer') {
+      newQuestion.correctAnswer = [""]; // Initialize as an array for short-answer
     }
 
     setQuestions([...questions, newQuestion]);

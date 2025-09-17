@@ -36,7 +36,6 @@ export default async function AdminContentPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Title</TableHead>
-                                <TableHead className="hidden md:table-cell">Created At</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -44,17 +43,11 @@ export default async function AdminContentPage() {
                                 articles.map(article => (
                                     <TableRow key={article.id}>
                                         <TableCell className="font-medium">{article.title}</TableCell>
-                                        <TableCell className="hidden md:table-cell">
-                                            {article.createdAt instanceof Date 
-                                                ? article.createdAt.toLocaleDateString()
-                                                : 'N/A'
-                                            }
-                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={2} className="text-center h-24">
+                                    <TableCell colSpan={1} className="text-center h-24">
                                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                                             <FileText className="h-8 w-8" />
                                             <p>No articles found.</p>

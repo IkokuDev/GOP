@@ -1,14 +1,14 @@
 
 "use server";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, getDoc, doc, addDoc, updateDoc, arrayUnion, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, addDoc, updateDoc, arrayUnion, Timestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { type Quiz, type Question } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
 function docToQuiz(doc: any): Quiz {
   const data = doc.data();
-  // Firestore Timestamps need to be converted to JS Dates to be serializable.
-  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+  // Convert Firestore Timestamp to a serializable ISO string.
+  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : new Date().toISOString();
   
   return {
     id: doc.id,
@@ -16,7 +16,7 @@ function docToQuiz(doc: any): Quiz {
     description: data.description,
     articleId: data.articleId,
     questions: data.questions,
-    createdAt: createdAt,
+    createdAt: createdAt as any, // Cast to any to satisfy the type, it's a string now
   };
 }
 
@@ -48,6 +48,27 @@ export async function createQuiz(quiz: Omit<Quiz, 'id' | 'createdAt'>): Promise<
     revalidatePath('/quizzes');
     return docRef.id;
 }
+
+export async function updateQuiz(id: string, quiz: Omit<Quiz, 'id' | 'createdAt'>): Promise<void> {
+    const quizRef = doc(db, "quizzes", id);
+    const quizData = {
+        ...quiz,
+        questions: quiz.questions.map(q => ({...q})), // Ensure questions are plain objects
+    };
+    await updateDoc(quizRef, quizData);
+    revalidatePath('/admin/quizzes');
+    revalidatePath(`/quizzes/${id}`);
+    revalidatePath('/quizzes');
+}
+
+
+export async function deleteQuiz(id: string): Promise<void> {
+    const quizRef = doc(db, "quizzes", id);
+    await deleteDoc(quizRef);
+    revalidatePath('/admin/quizzes');
+    revalidatePath('/quizzes');
+}
+
 
 export async function recordQuizResult(userId: string, quizId: string, score: number, totalQuestions: number) {
     const userRef = doc(db, "users", userId);

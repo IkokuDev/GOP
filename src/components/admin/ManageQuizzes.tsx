@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ListChecks } from 'lucide-react';
-import { DeleteQuizButton } from './DeleteQuizButton';
 
 type ManageQuizzesProps = {
     quizzes: Quiz[];
@@ -37,7 +36,6 @@ export function ManageQuizzes({ quizzes }: ManageQuizzesProps) {
                                         <Button variant="outline" size="sm" asChild>
                                             <Link href={`/admin/quizzes/edit/${quiz.id}`}>Edit</Link>
                                         </Button>
-                                        <DeleteQuizButton quizId={quiz.id} />
                                     </TableCell>
                                 </TableRow>
                             ))

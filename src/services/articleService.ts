@@ -58,6 +58,7 @@ export async function updateArticle(id: string, articleData: Partial<CreateArtic
     revalidatePath('/');
 }
 
+// Keeping delete for future use, but it's not currently wired up to the UI
 export async function deleteArticle(id: string): Promise<void> {
     const docRef = doc(db, "articles", id);
     await deleteDoc(docRef);

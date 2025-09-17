@@ -4,8 +4,7 @@ import { getArticles } from '@/services/articleService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, FileText } from 'lucide-react';
-import { DeleteArticleButton } from '@/components/admin/DeleteArticleButton';
+import { PlusCircle, FileText, Pencil } from 'lucide-react';
 
 export default async function AdminContentPage() {
     const articles = await getArticles();
@@ -17,7 +16,7 @@ export default async function AdminContentPage() {
                     <h1 className="text-4xl font-bold tracking-tighter md:text-5xl font-headline mb-2">
                         Manage Content
                     </h1>
-                    <p className="text-muted-foreground">Create, edit, and delete articles for your readers.</p>
+                    <p className="text-muted-foreground">Create new articles for your readers.</p>
                 </div>
                 <Button asChild>
                     <Link href="/admin/content/create">
@@ -53,10 +52,12 @@ export default async function AdminContentPage() {
                                             }
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/admin/content/edit/${article.id}`}>Edit</Link>
+                                           <Button variant="outline" size="sm" asChild>
+                                                <Link href={`/admin/content/edit/${article.id}`}>
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    Edit
+                                                </Link>
                                             </Button>
-                                            <DeleteArticleButton articleId={article.id} />
                                         </TableCell>
                                     </TableRow>
                                 ))

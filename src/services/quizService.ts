@@ -1,14 +1,14 @@
 
 "use server";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, getDoc, doc, addDoc, updateDoc, arrayUnion, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, addDoc, updateDoc, arrayUnion, Timestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { type Quiz, type Question } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
 function docToQuiz(doc: any): Quiz {
   const data = doc.data();
-  // Firestore Timestamps need to be converted to JS Dates to be serializable.
-  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+  // Firestore Timestamps need to be converted to be serializable.
+  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toISOString() : new Date().toISOString();
   
   return {
     id: doc.id,
@@ -16,7 +16,7 @@ function docToQuiz(doc: any): Quiz {
     description: data.description,
     articleId: data.articleId,
     questions: data.questions,
-    createdAt: createdAt,
+    createdAt: createdAt as any, // Treat as a string
   };
 }
 
@@ -47,6 +47,25 @@ export async function createQuiz(quiz: Omit<Quiz, 'id' | 'createdAt'>): Promise<
     revalidatePath('/admin/quizzes');
     revalidatePath('/quizzes');
     return docRef.id;
+}
+
+export async function updateQuiz(id: string, quiz: Omit<Quiz, 'id' | 'createdAt'>) {
+    const docRef = doc(db, "quizzes", id);
+    const quizData = {
+        ...quiz,
+        questions: quiz.questions.map(q => ({...q})),
+    }
+    await updateDoc(docRef, quizData);
+    revalidatePath('/admin/quizzes');
+    revalidatePath(`/quizzes/${id}`);
+}
+
+
+export async function deleteQuiz(id: string) {
+    const docRef = doc(db, "quizzes", id);
+    await deleteDoc(docRef);
+    revalidatePath('/admin/quizzes');
+    revalidatePath('/quizzes');
 }
 
 export async function recordQuizResult(userId: string, quizId: string, score: number, totalQuestions: number) {

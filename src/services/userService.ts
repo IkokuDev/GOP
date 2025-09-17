@@ -34,10 +34,10 @@ export async function getUserQuizHistory(uid: string): Promise<QuizHistory[]> {
     if (userDoc.exists()) {
         const data = userDoc.data();
         const history = (data.quizHistory || []) as any[];
-        // Convert Firestore Timestamps to serializable JS Date objects
+        // Convert Firestore Timestamps to a serializable format (ISO string).
         return history.map(h => ({
             ...h,
-            date: (h.date as Timestamp).toDate(),
+            date: (h.date as Timestamp).toISOString(),
         }));
     }
     

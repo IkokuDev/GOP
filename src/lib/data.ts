@@ -9,7 +9,7 @@ export type Article = {
   imageUrl: string;
   imageHint: string;
   quizId?: string;
-  createdAt: Timestamp;
+  createdAt: string; // Changed to string for serializability
   userId: string;
 };
 
@@ -38,7 +38,7 @@ export type Quiz = {
   description: string;
   articleId?: string;
   questions: Question[];
-  createdAt: Timestamp;
+  createdAt: string; // Changed to string for serializability
 };
 
 export type LeaderboardEntry = {
@@ -60,5 +60,5 @@ export type QuizHistory = {
   quizId: string;
   score: number;
   totalQuestions: number;
-  date: Timestamp;
+  date: string; // Changed to string for serializability
 }

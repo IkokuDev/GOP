@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 
 function docToArticle(doc: any): Article {
   const data = doc.data();
-  // Firestore Timestamps need to be converted to be serializable.
+  // Firestore Timestamps need to be converted to a serializable format (ISO string).
   const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toISOString() : new Date().toISOString();
 
   return {
@@ -17,7 +17,7 @@ function docToArticle(doc: any): Article {
     imageUrl: data.imageUrl,
     imageHint: data.imageHint,
     quizId: data.quizId,
-    createdAt: createdAt as any, // Treat as a string
+    createdAt: createdAt as any, // Now an ISO string
     userId: data.userId,
   };
 }

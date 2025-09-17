@@ -56,7 +56,6 @@ export async function updateQuiz(id: string, quiz: Omit<Quiz, 'id' | 'createdAt'
     revalidatePath('/quizzes');
 }
 
-// Keeping delete for future use, but it's not currently wired up to the UI
 export async function deleteQuiz(id: string): Promise<void> {
     const docRef = doc(db, "quizzes", id);
     await deleteDoc(docRef);

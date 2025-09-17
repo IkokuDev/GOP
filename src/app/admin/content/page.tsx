@@ -4,7 +4,7 @@ import { getArticles } from '@/services/articleService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, FileText, Pencil } from 'lucide-react';
+import { PlusCircle, FileText } from 'lucide-react';
 
 export default async function AdminContentPage() {
     const articles = await getArticles();
@@ -16,7 +16,7 @@ export default async function AdminContentPage() {
                     <h1 className="text-4xl font-bold tracking-tighter md:text-5xl font-headline mb-2">
                         Manage Content
                     </h1>
-                    <p className="text-muted-foreground">Create new articles for your readers.</p>
+                    <p className="text-muted-foreground">Create, edit, and manage articles for your readers.</p>
                 </div>
                 <Button asChild>
                     <Link href="/admin/content/create">
@@ -37,7 +37,6 @@ export default async function AdminContentPage() {
                             <TableRow>
                                 <TableHead>Title</TableHead>
                                 <TableHead className="hidden md:table-cell">Created At</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -51,19 +50,11 @@ export default async function AdminContentPage() {
                                                 : 'N/A'
                                             }
                                         </TableCell>
-                                        <TableCell className="text-right space-x-2">
-                                           <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/admin/content/edit/${article.id}`}>
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </Link>
-                                            </Button>
-                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">
+                                    <TableCell colSpan={2} className="text-center h-24">
                                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                                             <FileText className="h-8 w-8" />
                                             <p>No articles found.</p>

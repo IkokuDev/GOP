@@ -62,7 +62,7 @@ export function ArticleForm({ article }: ArticleFormProps) {
     }
     
     try {
-      if (isEditMode) {
+      if (isEditMode && article) {
         // Update existing article
         const articleData = {
           title: values.title,

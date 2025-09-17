@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { deleteArticle } from '@/services/articleService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 
 type DeleteArticleButtonProps = {
   articleId: string;
@@ -54,6 +54,7 @@ export function DeleteArticleButton({ articleId }: DeleteArticleButtonProps) {
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size="sm">
+          <Trash2 className="mr-2 h-4 w-4" />
           Delete
         </Button>
       </AlertDialogTrigger>

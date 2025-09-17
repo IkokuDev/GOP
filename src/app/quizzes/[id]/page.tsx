@@ -26,5 +26,3 @@ export default async function QuizPage({ params }: QuizPageProps) {
 
   return <QuizView quiz={serializableQuiz} />;
 }
-
-    

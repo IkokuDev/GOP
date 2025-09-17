@@ -53,7 +53,7 @@ export default async function AdminContentPage() {
                                     <TableRow key={article.id}>
                                         <TableCell className="font-medium">{article.title}</TableCell>
                                         <TableCell className="hidden md:table-cell">
-                                            {new Date(article.createdAt as any).toLocaleDateString()}
+                                            {article.createdAt.toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>

@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 function docToQuiz(doc: any): Quiz {
   const data = doc.data();
   // Firestore Timestamps need to be converted to a serializable format (ISO string).
-  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toISOString() : new Date().toISOString();
+  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
   
   return {
     id: doc.id,
@@ -16,7 +16,7 @@ function docToQuiz(doc: any): Quiz {
     description: data.description,
     articleId: data.articleId,
     questions: data.questions,
-    createdAt: createdAt as any, // Now an ISO string
+    createdAt: createdAt,
   };
 }
 

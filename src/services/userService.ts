@@ -37,7 +37,7 @@ export async function getUserQuizHistory(uid: string): Promise<QuizHistory[]> {
         // Convert Firestore Timestamps to a serializable format (ISO string).
         return history.map(h => ({
             ...h,
-            date: (h.date as Timestamp).toISOString(),
+            date: h.date instanceof Timestamp ? h.date.toDate().toISOString() : new Date().toISOString(),
         }));
     }
     

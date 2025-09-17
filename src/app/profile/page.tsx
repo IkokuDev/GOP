@@ -41,7 +41,7 @@ export default function ProfilePage() {
                     const enrichedHistory = await Promise.all(enrichedHistoryPromises);
 
                     // Sort by date string descending
-                    enrichedHistory.sort((a,b) => (b.date as string).localeCompare(a.date as string));
+                    enrichedHistory.sort((a,b) => (b.date).localeCompare(a.date));
 
                     setQuizHistory(enrichedHistory);
                 } catch (error) {
@@ -106,7 +106,7 @@ export default function ProfilePage() {
                     <div className="flex-1">
                     <h3 className="font-bold">{history.quizTitle || 'Quiz'}</h3>
                     <p className="text-sm text-muted-foreground">
-                        Completed on {new Date(history.date as any).toLocaleDateString()}
+                        Completed on {new Date(history.date).toLocaleDateString()}
                     </p>
                     </div>
                     <div className="font-bold text-lg">

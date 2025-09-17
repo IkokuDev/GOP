@@ -1,6 +1,5 @@
 
 import { z } from 'zod';
-import { Timestamp } from 'firebase/firestore';
 
 export type Article = {
   id: string;
@@ -9,7 +8,7 @@ export type Article = {
   imageUrl: string;
   imageHint: string;
   quizId?: string;
-  createdAt: string; // Changed to string for serializability
+  createdAt: Date; // Changed to string for serializability
   userId: string;
 };
 
@@ -38,7 +37,7 @@ export type Quiz = {
   description: string;
   articleId?: string;
   questions: Question[];
-  createdAt: string; // Changed to string for serializability
+  createdAt: Date; // Changed to string for serializability
 };
 
 export type LeaderboardEntry = {

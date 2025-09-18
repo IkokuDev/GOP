@@ -1,9 +1,12 @@
 
 "use server";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, getDoc, doc, addDoc, Timestamp, query, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
-import { type Article, type CreateArticleInput } from '@/lib/data';
+import { collection, getDocs, getDoc, doc, Timestamp, query, orderBy, updateDoc, deleteDoc } from 'firebase/firestore';
+import { type Article } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
+import { createArticle as createArticleFlow } from '@/ai/flows/create-article-flow';
+import { type CreateArticleInput } from '@/lib/data';
+
 
 function docToArticle(doc: any): Article {
   const data = doc.data();
@@ -41,16 +44,14 @@ export async function getArticle(id: string): Promise<Article | null> {
 }
 
 export async function createArticle(articleData: CreateArticleInput): Promise<string> {
-    const docRef = await addDoc(collection(db, "articles"), {
-        ...articleData,
-        createdAt: Timestamp.now(),
-    });
+    const articleId = await createArticleFlow(articleData);
     revalidatePath('/admin/content');
     revalidatePath('/');
-    return docRef.id;
+    revalidatePath(`/content/${articleId}`);
+    return articleId;
 }
 
-export async function updateArticle(id: string, articleData: Partial<CreateArticleInput>) {
+export async function updateArticle(id: string, articleData: Partial<Omit<CreateArticleInput, 'userId'>>) {
     const docRef = doc(db, "articles", id);
     await updateDoc(docRef, articleData);
     revalidatePath(`/admin/content`);

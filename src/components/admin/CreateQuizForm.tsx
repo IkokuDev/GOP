@@ -12,7 +12,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PlusCircle, X, Loader2, ChevronDown, Video, Upload, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createQuiz, updateQuiz } from "@/services/quizService";
-import { uploadVideo } from "@/services/storageService";
 import { generateVideo } from "@/ai/flows/generate-video-flow";
 import { type Question, type Quiz } from "@/lib/data";
 import {
@@ -24,6 +23,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL, type UploadTaskSnapshot } from "firebase/storage";
 
 
 type QuestionWithLocalId = Question & { localId: number };
@@ -141,8 +142,16 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     try {
       const result = await generateVideo({ prompt });
       if (result.videoUrl) {
-        handleQuestionChange(localId, 'videoUrl', result.videoUrl);
-        toast({ title: "Video generated successfully!" });
+        
+        // Genkit returns a data URI, let's convert it to a blob for consistency
+        const fetchRes = await fetch(result.videoUrl);
+        const blob = await fetchRes.blob();
+        const file = new File([blob], "generated-video.mp4", { type: "video/mp4" });
+
+        // Now upload it like a regular file
+        await handleVideoUpload(localId, file);
+
+        toast({ title: "Video generated and uploaded successfully!" });
       } else {
         throw new Error("Video generation did not return a URL.");
       }
@@ -158,20 +167,34 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     if (!file) return;
 
     setUploadProgress(prev => ({ ...prev, [localId]: 0 }));
-    try {
-      const filePath = `quiz_videos/${quizTitle.replace(/\s+/g, '_') || 'quiz'}/${Date.now()}_${file.name}`;
-      const downloadURL = await uploadVideo(file, filePath, (progress) => {
-        setUploadProgress(prev => ({ ...prev, [localId]: progress }));
-      });
-      handleQuestionChange(localId, 'videoUrl', downloadURL);
-      toast({ title: "Video uploaded successfully!" });
-    } catch (error: any) {
-      console.error("Video upload failed:", error);
-      toast({ variant: "destructive", title: "Video Upload Failed", description: error.message || "An unknown error occurred." });
-    } finally {
-        // Clear progress after a delay
-        setTimeout(() => setUploadProgress(prev => ({ ...prev, [localId]: undefined })), 2000);
-    }
+    
+    const filePath = `quiz_videos/${quizTitle.replace(/\s+/g, '_') || 'quiz'}/${Date.now()}_${file.name}`;
+    const storageRef = ref(storage, filePath);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on('state_changed',
+        (snapshot: UploadTaskSnapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(prev => ({ ...prev, [localId]: progress }));
+        },
+        (error) => {
+            console.error("Upload failed:", error);
+            toast({ variant: "destructive", title: "Video Upload Failed", description: error.message || "An unknown error occurred." });
+             setTimeout(() => setUploadProgress(prev => ({ ...prev, [localId]: undefined })), 2000);
+        },
+        async () => {
+            try {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                handleQuestionChange(localId, 'videoUrl', downloadURL);
+                toast({ title: "Video uploaded successfully!" });
+            } catch (error: any) {
+                console.error("Failed to get download URL:", error);
+                toast({ variant: "destructive", title: "Upload Finalization Failed", description: error.message });
+            } finally {
+                 setTimeout(() => setUploadProgress(prev => ({ ...prev, [localId]: undefined })), 2000);
+            }
+        }
+    );
   };
 
 
@@ -255,14 +278,20 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
                                 onChange={(e) => setVideoPrompt(prev => ({...prev, [q.localId]: e.target.value}))}
                                 disabled={isGenerating[q.localId]}
                             />
-                            <Button onClick={() => handleGenerateVideo(q.localId)} disabled={isGenerating[q.localId]}>
+                            <Button onClick={() => handleGenerateVideo(q.localId)} disabled={isGenerating[q.localId] || uploadProgress[q.localId] !== undefined}>
                                 {isGenerating[q.localId] && <Loader2 className="mr-2 animate-spin" />}
                                 {isGenerating[q.localId] ? 'Generating...' : 'Generate Video'}
                             </Button>
-                             {isGenerating[q.localId] && 
+                             {(isGenerating[q.localId] || uploadProgress[q.localId] !== undefined) && 
                                 <Alert>
                                     <AlertTitle>Patience is a Virtue</AlertTitle>
-                                    <AlertDescription>AI video generation can take up to a minute. Please don't navigate away.</AlertDescription>
+                                    <AlertDescription>
+                                        {isGenerating[q.localId] 
+                                            ? "AI video generation can take up to a minute. Your video will be uploaded automatically when complete."
+                                            : "Uploading video..."
+                                        }
+                                    </AlertDescription>
+                                    {uploadProgress[q.localId] !== undefined && <Progress value={uploadProgress[q.localId]} className="w-full mt-2" />}
                                 </Alert>
                              }
                         </div>
@@ -274,7 +303,7 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
                                 type="file"
                                 accept="video/*"
                                 onChange={(e) => e.target.files && handleVideoUpload(q.localId, e.target.files[0])}
-                                disabled={uploadProgress[q.localId] !== undefined}
+                                disabled={uploadProgress[q.localId] !== undefined || isGenerating[q.localId]}
                             />
                             {uploadProgress[q.localId] !== undefined && (
                                 <Progress value={uploadProgress[q.localId]} className="w-full" />

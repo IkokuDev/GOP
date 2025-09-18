@@ -22,12 +22,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth.tsx";
-import { type Article } from "@/lib/data";
+import { type Article, CreateArticleInputSchema } from "@/lib/data";
 
-const formSchema = z.object({
-  title: z.string().min(5, { message: "Title must be at least 5 characters." }),
-  content: z.string().min(50, { message: "Content must be at least 50 characters." }),
-  imageHint: z.string().min(2, { message: "Image hint must be at least 2 characters." }),
+const formSchema = CreateArticleInputSchema.omit({ userId: true, imageUrl: true }).extend({
+    imageHint: z.string().min(2, { message: "Image hint must be at least 2 characters." }),
 });
 
 type ArticleFormProps = {
@@ -79,10 +77,8 @@ export function ArticleForm({ article }: ArticleFormProps) {
         // Create new article
         const imageUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 1000)}/1200/800`;
         const articleData = {
-          title: values.title,
-          content: values.content,
+          ...values,
           imageUrl,
-          imageHint: values.imageHint,
           userId: user.uid,
         };
         const newArticleId = await createArticle(articleData);

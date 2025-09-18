@@ -21,7 +21,7 @@ const GenerateVideoInputSchema = z.object({
 export type GenerateVideoInput = z.infer<typeof GenerateVideoInputSchema>;
 
 const GenerateVideoOutputSchema = z.object({
-  videoUrl: z.string().url().describe("A data URI of the generated video. Expected format: 'data:video/mp4;base64,<encoded_data>'."),
+  videoUrl: z.string().describe("A data URI of the generated video. Expected format: 'data:video/mp4;base64,<encoded_data>'."),
 });
 export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;
 
@@ -67,8 +67,14 @@ const generateVideoFlow = ai.defineFlow(
       throw new Error('Failed to find the generated video in the operation result.');
     }
 
+     // Make sure the data URI has the mime type. Veo might not include it.
+    let videoUrl = video.media.url;
+    if (!videoUrl.startsWith('data:')) {
+        videoUrl = `data:video/mp4;base64,${videoUrl}`;
+    }
+
     return {
-      videoUrl: video.media.url, // This should be the data URI
+      videoUrl: videoUrl, 
     };
   }
 );

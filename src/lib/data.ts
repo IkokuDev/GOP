@@ -27,10 +27,9 @@ export type CreateArticleInput = z.infer<typeof CreateArticleInputSchema>;
 export type Question = {
   id: string;
   text: string;
-  videoUrl?: string; // For AI Video questions
   options?: string[]; // Optional for short-answer
   correctAnswer: string | string[]; // Can be a single string or an array for short-answer
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'ai-video';
+  type: 'multiple-choice' | 'true-false' | 'short-answer';
 };
 
 export type Quiz = {

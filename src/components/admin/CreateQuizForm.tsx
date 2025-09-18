@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { PlusCircle, X, Loader2, ChevronDown, Video, Upload, Wand2 } from "lucide-react";
+import { PlusCircle, X, Loader2, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createQuiz, updateQuiz } from "@/services/quizService";
-import { generateVideo } from "@/ai/flows/generate-video-flow";
 import { type Question, type Quiz } from "@/lib/data";
 import {
   DropdownMenu,
@@ -20,12 +19,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL, type UploadTaskSnapshot } from "firebase/storage";
-
 
 type QuestionWithLocalId = Question & { localId: number };
 
@@ -45,12 +38,6 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     );
   const [isSaving, setIsSaving] = useState(false);
 
-  // State for video handling
-  const [videoPrompt, setVideoPrompt] = useState<{ [key: number]: string }>({});
-  const [isGenerating, setIsGenerating] = useState<{ [key: number]: boolean }>({});
-  const [uploadProgress, setUploadProgress] = useState<{ [key: number]: number }>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const addQuestion = (type: Question['type']) => {
     const newQuestion: QuestionWithLocalId = {
       localId: Date.now(),
@@ -60,7 +47,7 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
       correctAnswer: "",
     };
 
-    if (type === 'multiple-choice' || type === 'ai-video') {
+    if (type === 'multiple-choice') {
       newQuestion.options = ["", "", "", ""];
     } else if (type === 'true-false') {
       newQuestion.options = ["True", "False"];
@@ -131,72 +118,6 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     );
   };
 
-  const handleGenerateVideo = async (localId: number) => {
-    const prompt = videoPrompt[localId];
-    if (!prompt) {
-      toast({ variant: "destructive", title: "Please enter a video prompt." });
-      return;
-    }
-
-    setIsGenerating(prev => ({ ...prev, [localId]: true }));
-    try {
-      const result = await generateVideo({ prompt });
-      if (result.videoUrl) {
-        
-        // Genkit returns a data URI, let's convert it to a blob for consistency
-        const fetchRes = await fetch(result.videoUrl);
-        const blob = await fetchRes.blob();
-        const file = new File([blob], "generated-video.mp4", { type: "video/mp4" });
-
-        // Now upload it like a regular file
-        await handleVideoUpload(localId, file);
-
-        toast({ title: "Video generated and uploaded successfully!" });
-      } else {
-        throw new Error("Video generation did not return a URL.");
-      }
-    } catch (error: any) {
-      console.error("Video generation failed:", error);
-      toast({ variant: "destructive", title: "Video Generation Failed", description: error.message || "An unknown error occurred." });
-    } finally {
-      setIsGenerating(prev => ({ ...prev, [localId]: false }));
-    }
-  };
-
-  const handleVideoUpload = async (localId: number, file: File) => {
-    if (!file) return;
-
-    setUploadProgress(prev => ({ ...prev, [localId]: 0 }));
-    
-    const filePath = `quiz_videos/${quizTitle.replace(/\s+/g, '_') || 'quiz'}/${Date.now()}_${file.name}`;
-    const storageRef = ref(storage, filePath);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on('state_changed',
-        (snapshot: UploadTaskSnapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(prev => ({ ...prev, [localId]: progress }));
-        },
-        (error) => {
-            console.error("Upload failed:", error);
-            toast({ variant: "destructive", title: "Video Upload Failed", description: error.message || "An unknown error occurred." });
-             setTimeout(() => setUploadProgress(prev => ({ ...prev, [localId]: undefined })), 2000);
-        },
-        async () => {
-            try {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                handleQuestionChange(localId, 'videoUrl', downloadURL);
-                toast({ title: "Video uploaded successfully!" });
-            } catch (error: any) {
-                console.error("Failed to get download URL:", error);
-                toast({ variant: "destructive", title: "Upload Finalization Failed", description: error.message });
-            } finally {
-                 setTimeout(() => setUploadProgress(prev => ({ ...prev, [localId]: undefined })), 2000);
-            }
-        }
-    );
-  };
-
 
   const handleSaveQuiz = async () => {
     if (!quizTitle || !quizDescription || questions.length === 0) {
@@ -205,11 +126,10 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
     }
     if (questions.some(q => 
         !q.text || 
-        (q.type === 'ai-video' && !q.videoUrl) ||
         !q.correctAnswer || (Array.isArray(q.correctAnswer) && q.correctAnswer.some(a => !a)) ||
-        ((q.type === 'multiple-choice' || q.type === 'ai-video') && q.options!.some(o => !o))
+        (q.type === 'multiple-choice' && q.options!.some(o => !o))
     )) {
-        toast({ variant: "destructive", title: "Please complete all fields for each question, including video for AI questions." });
+        toast({ variant: "destructive", title: "Please complete all fields for each question." });
         return;
     }
 
@@ -250,91 +170,6 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
 
   const renderQuestionSpecificFields = (q: QuestionWithLocalId) => {
     switch (q.type) {
-      case 'ai-video':
-        return (
-            <div className="space-y-4">
-                {q.videoUrl ? (
-                    <div className="space-y-4">
-                        <div className="w-full aspect-video rounded-md overflow-hidden bg-muted flex items-center justify-center">
-                            <video key={q.videoUrl} src={q.videoUrl} controls className="w-full h-full object-cover" />
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => handleQuestionChange(q.localId, 'videoUrl', undefined)}>
-                            <X className="mr-2 h-4 w-4" /> Replace Video
-                        </Button>
-                    </div>
-                ) : (
-                <Tabs defaultValue="generate" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="generate"><Wand2 className="mr-2"/>Generate</TabsTrigger>
-                        <TabsTrigger value="upload"><Upload className="mr-2"/>Upload</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="generate" className="p-1">
-                         <div className="space-y-2 mt-2">
-                            <Label htmlFor={`prompt-${q.localId}`}>AI Video Prompt</Label>
-                            <Textarea 
-                                id={`prompt-${q.localId}`} 
-                                placeholder="A majestic dragon soaring over a mystical forest..." 
-                                value={videoPrompt[q.localId] || ''}
-                                onChange={(e) => setVideoPrompt(prev => ({...prev, [q.localId]: e.target.value}))}
-                                disabled={isGenerating[q.localId]}
-                            />
-                            <Button onClick={() => handleGenerateVideo(q.localId)} disabled={isGenerating[q.localId] || uploadProgress[q.localId] !== undefined}>
-                                {isGenerating[q.localId] && <Loader2 className="mr-2 animate-spin" />}
-                                {isGenerating[q.localId] ? 'Generating...' : 'Generate Video'}
-                            </Button>
-                             {(isGenerating[q.localId] || uploadProgress[q.localId] !== undefined) && 
-                                <Alert>
-                                    <AlertTitle>Patience is a Virtue</AlertTitle>
-                                    <AlertDescription>
-                                        {isGenerating[q.localId] 
-                                            ? "AI video generation can take up to a minute. Your video will be uploaded automatically when complete."
-                                            : "Uploading video..."
-                                        }
-                                    </AlertDescription>
-                                    {uploadProgress[q.localId] !== undefined && <Progress value={uploadProgress[q.localId]} className="w-full mt-2" />}
-                                </Alert>
-                             }
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="upload" className="p-1">
-                        <div className="space-y-2 mt-2">
-                            <Label>Upload Video File</Label>
-                            <Input
-                                type="file"
-                                accept="video/*"
-                                onChange={(e) => e.target.files && handleVideoUpload(q.localId, e.target.files[0])}
-                                disabled={uploadProgress[q.localId] !== undefined || isGenerating[q.localId]}
-                            />
-                            {uploadProgress[q.localId] !== undefined && (
-                                <Progress value={uploadProgress[q.localId]} className="w-full" />
-                            )}
-                        </div>
-                    </TabsContent>
-                </Tabs>
-                )}
-
-                {q.videoUrl && (
-                    <div className="pt-4 mt-4 border-t">
-                        <Label>Answer Options (Select the correct one)</Label>
-                        <RadioGroup onValueChange={(value) => handleQuestionChange(q.localId, 'correctAnswer', value)} value={q.correctAnswer as string}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                            {(q.options || []).map((opt, oIndex) => (
-                                <div key={oIndex} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={(q.options || [])[oIndex]} id={`q${q.localId}-o${oIndex}`} />
-                                    <Input
-                                        placeholder={`Option ${oIndex + 1}`}
-                                        value={opt}
-                                        onChange={(e) => handleOptionChange(q.localId, oIndex, e.target.value)}
-                                        className="flex-1"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </RadioGroup>
-                    </div>
-                )}
-            </div>
-        );
       case 'multiple-choice':
         return (
             <div>
@@ -439,7 +274,6 @@ export function CreateQuizForm({ quiz }: CreateQuizFormProps) {
                 <DropdownMenuItem onClick={() => addQuestion('multiple-choice')}>Multiple Choice</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addQuestion('true-false')}>True / False</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addQuestion('short-answer')}>Short Answer</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addQuestion('ai-video')}><Video className="mr-2"/>AI Video</DropdownMenuItem>
             </DropdownMenuContent>
             </DropdownMenu>
         </div>

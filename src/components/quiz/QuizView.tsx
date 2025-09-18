@@ -165,7 +165,6 @@ export function QuizView({ quiz }: QuizViewProps) {
   const renderAnswerOptions = (question: Question) => {
     switch (question.type) {
       case 'multiple-choice':
-      case 'ai-video':
         return question.options!.map((option) => {
           const isCorrect = option === question.correctAnswer;
           const isSelected = option === selectedAnswer;
@@ -253,11 +252,6 @@ export function QuizView({ quiz }: QuizViewProps) {
           <CardDescription>Question {currentQuestionIndex + 1} of {quiz.questions.length}</CardDescription>
         </CardHeader>
         <CardContent>
-          {currentQuestion.type === 'ai-video' && currentQuestion.videoUrl && (
-            <div className="w-full aspect-video rounded-md overflow-hidden bg-muted flex items-center justify-center mb-6">
-                <video key={currentQuestion.videoUrl} src={currentQuestion.videoUrl} controls className="w-full h-full object-cover" />
-            </div>
-          )}
           <p className="text-xl mb-6">{currentQuestion.text}</p>
           <div className="grid grid-cols-1 gap-4">
             {renderAnswerOptions(currentQuestion)}

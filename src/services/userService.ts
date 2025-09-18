@@ -1,7 +1,7 @@
 
 "use server";
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, type Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { type UserProfile, type QuizHistory } from '@/lib/data';
 
 
@@ -37,9 +37,10 @@ export async function getUserQuizHistory(uid: string): Promise<QuizHistory[]> {
         // Convert Firestore Timestamps to a serializable format (ISO string).
         return history.map(h => ({
             ...h,
-            date: h.date instanceof Timestamp ? h.date.toDate().toISOString() : new Date().toISOString(),
+            date: h.date instanceof Timestamp ? h.date.toDate().toISOString() : (typeof h.date === 'string' ? h.date : new Date().toISOString()),
         }));
     }
     
     return [];
 }
+

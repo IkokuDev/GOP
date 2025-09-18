@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import { type Timestamp } from 'firebase/firestore';
 
 export type Article = {
   id: string;
@@ -26,9 +27,10 @@ export type CreateArticleInput = z.infer<typeof CreateArticleInputSchema>;
 export type Question = {
   id: string;
   text: string;
+  videoUrl?: string; // For AI Video questions
   options?: string[]; // Optional for short-answer
   correctAnswer: string | string[]; // Can be a single string or an array for short-answer
-  type: 'multiple-choice' | 'true-false' | 'short-answer';
+  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'ai-video';
 };
 
 export type Quiz = {
@@ -59,5 +61,5 @@ export type QuizHistory = {
   quizId: string;
   score: number;
   totalQuestions: number;
-  date: string;
+  date: string; // ISO string
 }

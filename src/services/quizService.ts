@@ -25,7 +25,7 @@ export async function getQuizzes(): Promise<Quiz[]> {
   const quizzesCollection = collection(db, "quizzes");
   const q = query(quizzesCollection, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(docToQuiz);
+  return querySnapshot.docs.map(docSnap => docToQuiz(docSnap));
 }
 
 export async function getQuiz(id: string): Promise<Quiz | null> {
@@ -78,7 +78,7 @@ export async function recordQuizResult(userId: string, quizId: string, score: nu
         quizId,
         score,
         totalQuestions,
-        date: Timestamp.now(),
+        date: new Date().toISOString(),
     }
     
     const userDoc = await getDoc(userRef);

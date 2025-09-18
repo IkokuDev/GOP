@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { type Question, type Quiz, type QuizHistory } from '@/lib/data';
+import { type Question, type Quiz } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
-import { type Timestamp } from 'firebase/firestore';
 
 export type SerializableQuiz = Omit<Quiz, 'createdAt'> & {
   createdAt: string;
@@ -100,7 +99,7 @@ export function QuizView({ quiz }: QuizViewProps) {
       setIsFinished(true);
       if (user && !hasAttempted) {
         try {
-          await recordQuizResult(user.uid, quiz.id, score, quiz.questions.length);
+          await recordQuizResult(user.uid, quiz.id, score + (isAnswered ? 0 : 1), quiz.questions.length);
           toast({ title: "Quiz result saved!" });
           setHasAttempted(true); // Mark as attempted after saving
         } catch (error) {
@@ -166,6 +165,7 @@ export function QuizView({ quiz }: QuizViewProps) {
   const renderAnswerOptions = (question: Question) => {
     switch (question.type) {
       case 'multiple-choice':
+      case 'ai-video':
         return question.options!.map((option) => {
           const isCorrect = option === question.correctAnswer;
           const isSelected = option === selectedAnswer;
@@ -253,6 +253,11 @@ export function QuizView({ quiz }: QuizViewProps) {
           <CardDescription>Question {currentQuestionIndex + 1} of {quiz.questions.length}</CardDescription>
         </CardHeader>
         <CardContent>
+          {currentQuestion.type === 'ai-video' && currentQuestion.videoUrl && (
+            <div className="w-full aspect-video rounded-md overflow-hidden bg-muted flex items-center justify-center mb-6">
+                <video key={currentQuestion.videoUrl} src={currentQuestion.videoUrl} controls className="w-full h-full object-cover" />
+            </div>
+          )}
           <p className="text-xl mb-6">{currentQuestion.text}</p>
           <div className="grid grid-cols-1 gap-4">
             {renderAnswerOptions(currentQuestion)}

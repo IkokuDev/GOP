@@ -1,7 +1,7 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
@@ -22,8 +22,18 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
+
+// Connect to emulators if in development
+if (process.env.NODE_ENV === 'development') {
+  console.log("Development mode: Connecting to Firebase emulators.");
+  // Point to the emulators
+  connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectStorageEmulator(storage, 'localhost', 9199);
+}
+
 // Initialize Analytics if running in the browser
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
   getAnalytics(app);
 }
 
